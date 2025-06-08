@@ -2,6 +2,8 @@
 
 Implementation of Vision Language Model (paligemma). 
 
+![paligemma](./paligemma.png)
+
 
 ## Citations
 
