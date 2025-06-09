@@ -2,7 +2,7 @@
 
 Implementation of Vision Language Model (paligemma). 
 
-![paligemma](./paligemma.png)
+![paligemma](./canvas.jpeg)
 
 
 ## Getting Started
