@@ -9,6 +9,7 @@ from typing import Tuple
 import os
 from transformers import AutoTokenizer
 import glob
+import fire
 
 
 def load_hf_model(model_path: str, device: str):
@@ -112,7 +113,9 @@ def test_inference(
 
         # attend the next token to the input
         input_ids = next_token.unsqueeze(-1)
-        attention_mask = torch.cat([attention_mask, torch.ones_like((1, 1), device=input_ids.device)], dim=-1)
+        attention_mask = torch.cat(
+            [attention_mask, torch.ones((1, 1), device=input_ids.device)], dim=-1
+        )
 
     generated_tokens = torch.cat(generated_tokens, dim=-1)
     decoded_text = processor.tokenizer.decode(generated_tokens, skip_special_tokens=True)

@@ -40,8 +40,9 @@ class GemmaRotaryEmbedding(nn.Module):
         self.device = device
 
         inv_freq = 1.0 / (self.base ** (torch.arange(0, self.head_dim, 2, device=self.device) / self.head_dim))
-        self.register_buffer("inv_freq", tensors=inv_freq, persistent=False)
+        self.register_buffer("inv_freq", tensor=inv_freq, persistent=False)
     
+    @torch.no_grad()
     def forward(self, x, position_ids, seq_len=None):
         # x: batch_size, num_heads, seq_len, head_dim
         self.inv_freq = self.inv_freq.to(x.device)
@@ -107,7 +108,7 @@ class PaliGemmaConfig():
         pad_token_id: int = None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__()
         self.ignore_index = ignore_index
         self.image_token_index = image_token_index
         self.vocab_size = vocab_size
@@ -224,7 +225,7 @@ def rotate_half(x):
     x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
 
-def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=-1):
+def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
     """
     Using Hugging Face's implementation
     """
@@ -281,8 +282,6 @@ class GemmaAttention(nn.Module):
         query_states = self.q_proj(hidden_states)
         key_states = self.k_proj(hidden_states)
         value_states = self.v_proj(hidden_states)
-
-        query_states, key_states, value_states = self.rotary_emb(query_states, key_states, value_states, position_ids)
 
         query_states = query_states.view(batch_size, q_len, self.num_heads, self.head_dim).transpose(1, 2) # batch_size, num_heads, seq_len, head_dim
         key_states = key_states.view(batch_size, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2) # batch_size, num_key_value_heads, seq_len, head_dim
@@ -425,7 +424,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         input_embeds = self.language_model.get_input_embeddings()(input_ids)
 
         # batch_size, channels, height, width -> batch_size, num_patches, embed_dim
-        image_embeds = self.vision_tower(pixel_values.to(self.input_embeds.dtype))
+        image_embeds = self.vision_tower(pixel_values.to(input_embeds.dtype))
 
         # batch_size, num_patches, embed_dim -> batch_size, num_patches, hidden_size
         # basically convert the image embeddings to the same dimension as the text embeddings
@@ -450,8 +449,8 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         attention_mask: torch.Tensor,
         kv_cache: Optional[KVCache] = None,
     ):
-        _, _, embed_dim = input_embeds.shape
-        batch_size, seq_length = image_embeds.shape
+        _, _, embed_dim = image_embeds.shape
+        batch_size, seq_length = input_ids.shape
         dtype, device = input_embeds.dtype, input_embeds.device
 
         # TODO: understand why they scale this way?
@@ -463,16 +462,16 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         image_mask = (input_ids == self.config.image_token_index)
         padding_mask = (input_ids == self.pad_token_id)
 
-        text_mask_expanded = text_mask.unsqueeze(-1).expand(-1, -1, seq_length)
-        image_mask_expanded = image_mask.unsqueeze(-1).expand(-1, -1, seq_length)
-        padding_mask_expanded = padding_mask.unsqueeze(-1).expand(-1, -1, seq_length)
+        text_mask_expanded = text_mask.unsqueeze(-1).expand(-1, -1, embed_dim)
+        image_mask_expanded = image_mask.unsqueeze(-1).expand(-1, -1, embed_dim)
+        padding_mask_expanded = padding_mask.unsqueeze(-1).expand(-1, -1, embed_dim)
 
         # insert the text embeddings to the final embeddings
         final_embeds = torch.where(text_mask_expanded, input_embeds, final_embeds)
         
         # insert the image embeddings to the final embeddings. can't use torch.where because sequence length of 
         # scaled_image_embeds is different from final_embeds
-        final_embeds = torch.masked_scatter(image_mask_expanded, scaled_image_embeds)
+        final_embeds = final_embeds.masked_scatter(image_mask_expanded, scaled_image_embeds)
 
         # insert the padding embeddings to the final embeddings
         final_embeds = torch.where(padding_mask_expanded, torch.zeros_like(final_embeds), final_embeds)
@@ -480,7 +479,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
     
         # create the attention mask
         dtype, device = input_embeds.dtype, input_embeds.device
-        min_dtype = torch.finfo(dtype=dtype).min
+        min_dtype = torch.finfo(dtype).min
         q_len = input_embeds.shape[1]
         if kv_cache is None or kv_cache.num_items() == 0:
             causal_mask = torch.full((batch_size, q_len, q_len), fill_value=0, device=device, dtype=dtype)
@@ -491,6 +490,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
 
         # add the head dimension
         # b, q_len, kv_len -> b, num_heads_q, q_len, kv_len
+        causal_mask.unsqueeze(1)
 
         if kv_cache is not None and kv_cache.num_items() > 0:
             # the position of the query is just the last position
