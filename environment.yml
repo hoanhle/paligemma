@@ -1,0 +1,11 @@
+name: paligemma
+channels:
+  - defaults
+dependencies:
+  - python=3.10.9
+  - pip
+  - pip:
+    - -r requirements.txt
+
+# conda env create -f environment.yml
+# conda env update -f environment.yml
