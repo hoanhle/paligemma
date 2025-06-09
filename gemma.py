@@ -454,7 +454,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         dtype, device = input_embeds.dtype, input_embeds.device
 
         # TODO: understand why they scale this way?
-        scaled_image_embeds = image_embeds / math.sqrt(self.config.hidden_size**0.5)
+        scaled_image_embeds = image_embeds /  (self.config.hidden_size ** 0.5)
         
         final_embeds = torch.zeros(batch_size, seq_length, embed_dim, device=device, dtype=dtype )
 

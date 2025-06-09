@@ -46,7 +46,6 @@ class PaliGemmaProcessor:
 
         self.image_seq_length = num_image_tokens
         self.image_size = image_size
-        tokenizer = tokenizer
 
         # Tokenizer described here: 
         # https://github.com/google-research/big_vision/tree/main/big_vision/configs/proj/paligemma

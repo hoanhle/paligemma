@@ -1,4 +1,4 @@
-## Implementation of Paligemma (WIP)
+## Implementation of Paligemma
 
 Implementation of Vision Language Model (paligemma). 
 
