@@ -51,3 +51,64 @@ Implementation of Vision Language Model (paligemma).
       url={https://arxiv.org/abs/2010.11929}, 
 }
 ```
+
+```bibtex
+@misc{zhang2019rootmeansquarelayer,
+      title={Root Mean Square Layer Normalization}, 
+      author={Biao Zhang and Rico Sennrich},
+      year={2019},
+      eprint={1910.07467},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/1910.07467}, 
+}
+```
+
+```bibtex
+@misc{ba2016layernormalization,
+      title={Layer Normalization}, 
+      author={Jimmy Lei Ba and Jamie Ryan Kiros and Geoffrey E. Hinton},
+      year={2016},
+      eprint={1607.06450},
+      archivePrefix={arXiv},
+      primaryClass={stat.ML},
+      url={https://arxiv.org/abs/1607.06450}, 
+}
+```
+
+```bibtex
+@misc{shazeer2019fasttransformerdecodingwritehead,
+      title={Fast Transformer Decoding: One Write-Head is All You Need}, 
+      author={Noam Shazeer},
+      year={2019},
+      eprint={1911.02150},
+      archivePrefix={arXiv},
+      primaryClass={cs.NE},
+      url={https://arxiv.org/abs/1911.02150}, 
+}
+```
+
+
+```bibtex
+@misc{ainslie2023gqatraininggeneralizedmultiquery,
+      title={GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints}, 
+      author={Joshua Ainslie and James Lee-Thorp and Michiel de Jong and Yury Zemlyanskiy and Federico Lebrón and Sumit Sanghai},
+      year={2023},
+      eprint={2305.13245},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2305.13245}, 
+}
+```
+
+```bibtex
+@misc{su2023roformerenhancedtransformerrotary,
+      title={RoFormer: Enhanced Transformer with Rotary Position Embedding}, 
+      author={Jianlin Su and Yu Lu and Shengfeng Pan and Ahmed Murtadha and Bo Wen and Yunfeng Liu},
+      year={2023},
+      eprint={2104.09864},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2104.09864}, 
+}
+```

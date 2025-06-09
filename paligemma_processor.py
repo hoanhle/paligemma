@@ -38,9 +38,6 @@ def process_image(
     return images
 
 
-    
-    
-
 class PaliGemmaProcessor:
 
     IMAGE_TOKEN = "<image>" # placeholder for the image token, later replaced by image embeddings produced by Vision Encoder
