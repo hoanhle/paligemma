@@ -5,6 +5,36 @@ Implementation of Vision Language Model (paligemma).
 ![paligemma](./paligemma.png)
 
 
+## Getting Started
+
+### Environment setup
+
+Use **conda** or **uv** to install dependencies:
+
+```bash
+# with conda
+conda env create -f environment.yml
+conda activate paligemma
+
+# with uv
+pip install uv
+uv venv
+uv pip install -r requirements.txt
+```
+
+### Download model weights
+
+The weights are hosted on [Hugging Face](https://huggingface.co/google/paligemma-3b-pt-224). Download them with:
+
+```bash
+git lfs install
+git clone https://huggingface.co/google/paligemma-3b-pt-224 ~/workspace/model_weights/paligemma-3b-pt-224
+```
+
+Set `MODEL_PATH` in `launch_inference.sh` to the downloaded directory.
+
+
+
 ## Citations
 
 ```bibtex
