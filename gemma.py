@@ -39,25 +39,43 @@ class GemmaRotaryEmbedding(nn.Module):
         self.base = base
         self.device = device
 
-        inv_freq = 1.0 / (self.base ** (torch.arange(0, self.head_dim, 2, device=self.device) / self.head_dim))
+        # Create inv_freq with proper device handling
+        if device is not None:
+            inv_freq = 1.0 / (self.base ** (torch.arange(0, self.head_dim, 2, device=device, dtype=torch.float32) / self.head_dim))
+        else:
+            inv_freq = 1.0 / (self.base ** (torch.arange(0, self.head_dim, 2, dtype=torch.float32) / self.head_dim))
         self.register_buffer("inv_freq", tensor=inv_freq, persistent=False)
     
     @torch.no_grad()
     def forward(self, x, position_ids, seq_len=None):
         # x: batch_size, num_heads, seq_len, head_dim
-        self.inv_freq = self.inv_freq.to(x.device)
+        # Ensure inv_freq is on the same device as x
+        if self.inv_freq.device != x.device:
+            self.inv_freq = self.inv_freq.to(x.device)
+        
         # copy inv_freq for batch in the sequence
         # inv_freq_expanded: batch_size, head_dim // 2, 1
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
         position_ids_expanded = position_ids[:, None, :].float()
 
-        with torch.autocast(device_type=x.device.type, enabled=False):
+        # Handle autocast properly for different devices
+        device_type = x.device.type
+        # MPS doesn't support autocast in the same way as CUDA
+        if device_type == "mps":
+            # Compute without autocast for MPS
             freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
-
-            # Hugging Face's implementation https://github.com/huggingface/transformers/issues/25199
             emb = torch.cat([freqs, freqs], dim=-1)
             cos = emb.cos().to(x.dtype)
             sin = emb.sin().to(x.dtype)
+        else:
+            # Use autocast for CUDA/CPU
+            with torch.autocast(device_type=device_type if device_type != "mps" else "cpu", enabled=False):
+                freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
+
+                # Hugging Face's implementation https://github.com/huggingface/transformers/issues/25199
+                emb = torch.cat([freqs, freqs], dim=-1)
+                cos = emb.cos().to(x.dtype)
+                sin = emb.sin().to(x.dtype)
             
         return cos, sin
 
@@ -382,7 +400,11 @@ class GemmaModel(nn.Module):
         kv_cache: Optional[KVCache] = None,
     ) -> torch.FloatTensor:
         hidden_states = inputs_embeds
-        normalizer = torch.tensor(self.config.hidden_size**0.5, device=hidden_states.device, dtype=hidden_states.dtype)
+        
+        # Use float32 for the normalizer to ensure MPS compatibility
+        normalizer = torch.tensor(self.config.hidden_size**0.5, device=hidden_states.device, dtype=torch.float32)
+        # Convert to the same dtype as hidden_states
+        normalizer = normalizer.to(hidden_states.dtype)
         hidden_states = hidden_states * normalizer
 
         for decoder_layer in self.layers:
