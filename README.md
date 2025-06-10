@@ -22,6 +22,83 @@ uv venv
 uv pip install -r requirements.txt
 ```
 
+### MPS Backend Support (Apple Silicon)
+
+This implementation includes full support for Apple's Metal Performance Shaders (MPS) backend, enabling GPU acceleration on Mac devices with Apple Silicon (M1, M2, M3, etc.).
+
+#### Features
+
+- **Automatic device detection**: Automatically detects and uses MPS when available
+- **Optimized memory management**: Configures MPS memory settings for optimal performance
+- **Dtype compatibility**: Automatically converts unsupported dtypes (e.g., float64 to float32)
+- **Fallback support**: Enables CPU fallback for operations not yet supported by MPS
+- **Performance optimizations**: MPS-specific optimizations for better inference speed
+
+#### Testing MPS Support
+
+To verify MPS is working correctly on your system:
+
+```bash
+# Run the MPS test script
+python test_mps_support.py
+```
+
+This will run comprehensive tests including:
+- MPS availability checks
+- Tensor operations compatibility
+- Model inference tests
+- Performance benchmarks
+
+#### Running Inference with MPS
+
+The inference script automatically detects and uses MPS when available:
+
+```bash
+# Standard inference (auto-detects MPS)
+bash launch_inference.sh
+
+# Or use the MPS-optimized launch script
+bash launch_inference_mps.sh
+```
+
+#### MPS Configuration
+
+You can configure MPS behavior through environment variables:
+
+```bash
+# Set memory usage limit (default: 0.7 = 70%)
+export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.7
+
+# Enable CPU fallback for unsupported ops (recommended)
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+
+# Enable profiling for debugging (default: 0)
+export PYTORCH_MPS_PROFILING=0
+```
+
+#### Troubleshooting MPS
+
+If you encounter issues with MPS:
+
+1. **Verify PyTorch MPS support**:
+   ```python
+   import torch
+   print(torch.backends.mps.is_available())  # Should return True
+   print(torch.backends.mps.is_built())      # Should return True
+   ```
+
+2. **Check macOS version**: MPS requires macOS 12.3+ 
+
+3. **Update PyTorch**: Ensure you have a recent PyTorch version with MPS support:
+   ```bash
+   pip install torch>=2.0.0
+   ```
+
+4. **Memory issues**: If you encounter out-of-memory errors, reduce the memory fraction:
+   ```bash
+   export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.5
+   ```
+
 ### Download model weights
 
 The weights are hosted on [Hugging Face](https://huggingface.co/google/paligemma-3b-pt-224). Download them with:
