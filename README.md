@@ -142,3 +142,69 @@ Set `MODEL_PATH` in `launch_inference.sh` to the downloaded directory.
       url={https://arxiv.org/abs/2104.09864}, 
 }
 ```
+
+## Web Interface with Gradio
+
+We've added a web interface using [Gradio](https://github.com/gradio-app/gradio) for easier interaction with the PaliGemma model.
+
+### Installation
+
+The Gradio dependency has been added to `requirements.txt`. Install it along with other dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Running the Web Interface
+
+There are two ways to run the Gradio interface:
+
+#### 1. Full Interface (with model loading UI)
+
+This interface allows you to load models dynamically through the web UI:
+
+```bash
+./launch_gradio.sh
+# or
+python app_gradio.py
+```
+
+The interface will be available at http://localhost:7860
+
+#### 2. Simple Interface (with pre-loaded model)
+
+This interface can load a model on startup:
+
+```bash
+# Without pre-loading a model
+python app_gradio_simple.py
+
+# With a pre-loaded model
+python app_gradio_simple.py --model_path ~/workspace/model_weights/paligemma-3b-pt-224
+
+# With sharing enabled (creates a public URL)
+python app_gradio_simple.py --model_path ~/workspace/model_weights/paligemma-3b-pt-224 --share
+
+# On a different port
+python app_gradio_simple.py --port 8080
+```
+
+### Using the Interface
+
+1. **Upload an image**: Click or drag-and-drop an image into the image upload area
+2. **Enter a prompt**: Type your question or instruction about the image (e.g., "Describe this image:", "What objects are in this photo?")
+3. **Adjust settings** (optional): Expand the "Generation Settings" panel to modify:
+   - Max tokens: Number of tokens to generate
+   - Temperature: Controls randomness (higher = more random)
+   - Top-p: Nucleus sampling parameter
+   - Use Sampling: Toggle between sampling and greedy decoding
+4. **Generate**: Click the "Generate" button to get the model's response
+
+### Features
+
+- Clean, modern UI with emoji icons
+- Real-time image preview
+- Adjustable generation parameters
+- Example prompts for quick testing
+- Support for various image formats (JPEG, PNG, etc.)
+- Responsive design that works on different screen sizes
