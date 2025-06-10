@@ -2,6 +2,7 @@ from PIL import Image
 from paligemma_processor import PaliGemmaProcessor
 from gemma import PaliGemmaForConditionalGeneration, PaliGemmaConfig, KVCache
 import torch
+from torchao.quantization.quant_api import quantize_, Int4WeightOnlyConfig
 import json
 import os
 from safetensors import safe_open
@@ -135,9 +136,52 @@ def main(
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    print(f"Loading model from {model_path}")
-    model, tokenizer = load_hf_model(model_path, device)
-    model = model.to(device).eval()
+    print(f"Loading model from {model_path} onto CPU for quantization...")
+    # Load model onto CPU first
+    model, tokenizer = load_hf_model(model_path, "cpu")
+    model = model.eval() # Set to eval mode before quantization
+
+    print("Saving original model state_dict to disk...")
+    original_model_path = "original_model_state_dict.pth"
+    torch.save(model.state_dict(), original_model_path)
+    print(f"Original model state_dict saved to: {original_model_path}")
+    original_size = os.path.getsize(original_model_path)
+    print(f"Original model state_dict size: {original_size / (1024*1024):.2f} MB")
+
+    print("Original model structure:")
+    print(model)
+
+    # Define quantization configuration
+    # Using group_size=128 and hqq=True as per torchao examples for potentially better quality.
+    # If hqq or specific group_size causes issues (e.g. not available in CPU-only torchao build),
+    # a simpler config like Int4WeightOnlyConfig() can be tried.
+    quantization_config = Int4WeightOnlyConfig(group_size=128, use_hqq=True)
+
+    print(f"Applying INT4 weight-only quantization with config: {quantization_config}...")
+    # Apply quantization
+    # Ensure the model is on CPU before calling quantize_ if the backend expects it.
+    # Some backends might require specific model states or data types.
+    quantized_model = quantize_(model, quantization_config)
+    print("Quantization complete.")
+
+    print("Quantized model structure:")
+    print(quantized_model)
+
+    print("Saving quantized model state_dict to disk...")
+    quantized_model_path = "quantized_model_state_dict.pth"
+    # Ensure quantized_model is on CPU before saving for fair comparison if it's not already
+    torch.save(quantized_model.state_dict(), quantized_model_path)
+    print(f"Quantized model state_dict saved to: {quantized_model_path}")
+    quantized_size = os.path.getsize(quantized_model_path)
+    print(f"Quantized model state_dict size: {quantized_size / (1024*1024):.2f} MB")
+
+    if original_size > 0:
+        reduction_percentage = (original_size - quantized_size) / original_size * 100
+        print(f"Model size reduction: {reduction_percentage:.2f}%")
+
+    # Move the quantized model to the target device
+    model = quantized_model.to(device)
+    print(f"Moved quantized model to device: {device}")
 
     num_image_tokens = model.config.vision_config.num_image_tokens
     image_size = model.config.vision_config.image_size
